@@ -66,6 +66,7 @@ class Location(BaseModel):
 
 class Comments(models.Model):
     """Модель, описывающая комментарий"""
+
     text = models.TextField('Текст комментария')
     created_at = models.DateTimeField(auto_now_add=True)
     post = models.ForeignKey(
@@ -81,7 +82,6 @@ class Comments(models.Model):
 
     class Meta:
         ordering = ('created_at',)
-
 
 
 class Post(BaseModel):
