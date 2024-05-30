@@ -152,11 +152,15 @@ class ProfileDetailView(DetailView):
         return context
 
 
-class ProfileUpdateView(OnlyAuthorMixin, UpdateView):
+class ProfileUpdateView(UserPassesTestMixin, UpdateView):
     model = MyUser
     form_class = CustomUserCreationForm
     slug_field = 'username'
     template_name = 'blog/user.html'
+
+    def test_func(self):
+        object = self.get_object()
+        return object == self.request.user
 
     def get_success_url(self):
         return reverse_lazy(
