@@ -6,9 +6,8 @@ from django.views.generic import (
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 
 from .models import Category, Comments, Post
@@ -125,7 +124,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
         form = PostForm(instance=instance)
         context['form'] = form
         return context
-    
+
     def get_success_url(self):
         return reverse_lazy(
             'blog:index'
