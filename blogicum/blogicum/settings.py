@@ -139,7 +139,7 @@ LOGIN_URL = 'login'
 
 # Name of view-function processing 403 fail
 
-CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
+CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 
 
 # Directory for media

@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.http import HttpResponseNotFound
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
@@ -7,12 +8,47 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 
 from .models import Category, Comments, Post
 from .forms import CommentsForm, PostForm
 from users.models import MyUser
 from users.forms import CustomUserCreationForm
+
+
+class AuthorPostNotPublished(UserPassesTestMixin):
+
+    def test_func(self):
+        datetime_now = datetime.now()
+        object = self.get_object()
+        if datetime_now.date() < object.pub_date.date():
+            if object.author == self.request.user:
+                return True
+            else:
+                return False
+        if object.is_published:
+            if object.category.is_published:
+                return True
+            else:
+                if object.author == self.request.user:
+                    return True
+                else:
+                    return False
+        else:
+            if object.category.is_published:
+                if object.author == self.request.user:
+                    return True
+                else:
+                    return False
+            else:
+                if object.author == self.request.user:
+                    return True
+                else:
+                    return False
+
+    def handle_no_permission(self):
+        return HttpResponseNotFound()
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
@@ -67,6 +103,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class PostUpdateView(OnlyAuthorMixin, UpdateView):
     model = Post
     form_class = PostForm
+    pk_url_kwarg = 'post_id'
     template_name = 'blog/create.html'
 
     def get_success_url(self):
@@ -76,28 +113,35 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
         )
 
 
-def delete_post(request, post_id):
-    instance = get_object_or_404(Post, pk=post_id, author=request.user)
-    form = PostForm(instance=instance)
-    context = {'form': form}
-    if request.method == 'POST':
-        instance.delete()
-        return redirect('blog:index')
-    return render(request, 'blog/create.html', context)
-
-
-class PostDetailView(DetailView):
+class PostDeleteView(OnlyAuthorMixin, DeleteView):
     model = Post
     pk_url_kwarg = 'post_id'
+    template_name = 'blog/create.html'
+    context_object_name = 'form'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        instance = get_object_or_404(Post, pk=self.object.pk)
+        form = PostForm(instance=instance)
+        context['form'] = form
+        return context
+    
+    def get_success_url(self):
+        return reverse_lazy(
+            'blog:index'
+        )
+
+
+class PostDetailView(AuthorPostNotPublished, DetailView):
+    model = Post
+    pk_url_kwarg = 'post_id'
+    pk_field = 'post_id'
     template_name = 'blog/detail.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        comments = get_object_or_404(
-            Post,
-            pk=self.kwargs['post_id']
-        ).comments.all()
-        context['comments'] = comments
+        post = self.get_object()
+        context['comments'] = post.comments.all()
         context['form'] = CommentsForm()
         return context
 
@@ -138,18 +182,29 @@ class ProfileDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        profile = get_object_or_404(MyUser, username=self.object.username)
+        profile = self.get_object()
         post = Post.objects.filter(
-            author__username=self.object.username,
+            author__username=profile.username,
         ).order_by('-pub_date').annotate(comment_count=Count('comments'))
-        paginator = Paginator(post, 10)
-        page_number = self.request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        context = {
-            'profile': profile,
-            'page_obj': page_obj
-        }
-        return context
+        if profile == self.request.user:
+            paginator = Paginator(post, 10)
+            page_number = self.request.GET.get('page')
+            page_obj = paginator.get_page(page_number)
+            context = {
+                'profile': profile,
+                'page_obj': page_obj
+            }
+            return context
+        else:
+            post = post.filter(is_published=True)
+            paginator = Paginator(post, 10)
+            page_number = self.request.GET.get('page')
+            page_obj = paginator.get_page(page_number)
+            context = {
+                'profile': profile,
+                'page_obj': page_obj
+            }
+            return context
 
 
 class ProfileUpdateView(UserPassesTestMixin, UpdateView):

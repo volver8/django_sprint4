@@ -4,8 +4,8 @@ from django.urls import include, path, reverse_lazy
 from users.forms import CustomUserCreationForm
 
 
-handler404 = 'core.views.page_not_found'
-handler500 = 'core.views.fail_on_server'
+handler404 = 'pages.views.page_not_found'
+handler500 = 'pages.views.fail_on_server'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
