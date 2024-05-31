@@ -19,7 +19,6 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'blog.apps.BlogConfig',
     'pages.apps.PagesConfig',
-    'core.apps.CoreConfig',
     'django_bootstrap5',
     'django.contrib.admin',
     'django.contrib.auth',
