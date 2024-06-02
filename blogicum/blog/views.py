@@ -1,6 +1,5 @@
 from datetime import datetime
-from django.db.models.query import QuerySet
-from django.http import Http404, HttpResponseNotFound
+from django.http import Http404
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
@@ -157,7 +156,10 @@ class CategoryListView(ListView):
     template_name = 'blog/category.html'
 
     def get_queryset(self):
-        category = get_object_or_404(Category, slug=self.kwargs['category_slug'])
+        category = get_object_or_404(
+            Category,
+            slug=self.kwargs['category_slug']
+        )
         if category.is_published is False:
             raise Http404
         queryset = get_posts_base_queryset(
@@ -171,7 +173,10 @@ class CategoryListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        category = get_object_or_404(Category, slug=self.kwargs['category_slug'])
+        category = get_object_or_404(
+            Category,
+            slug=self.kwargs['category_slug']
+        )
         paginator = Paginator(self.get_queryset(), 10)
         page_number = self.request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -196,7 +201,12 @@ class ProfileListView(ListView):
                 True
             )
             return queryset
-        return get_posts_base_queryset(False, False, False, self.kwargs['username'])
+        return get_posts_base_queryset(
+            False,
+            False,
+            False,
+            self.kwargs['username']
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
