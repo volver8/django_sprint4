@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Location, Post
+from .models import Category, Comments, Location, Post
 
 
 class CategoryAdmin(admin.ModelAdmin):
@@ -43,6 +43,21 @@ class PostAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
 
 
+class CommentsAdmin(admin.ModelAdmin):
+    list_display = (
+        'text',
+        'post',
+        'author',
+        'is_published',
+        'created_at'
+    )
+    list_editable = (
+        'is_published',
+    )
+    list_filter = ('author', 'created_at')
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Location, LocationAdmin)
 admin.site.register(Post, PostAdmin)
+admin.site.register(Comments, CommentsAdmin)

@@ -64,11 +64,10 @@ class Location(BaseModel):
         return self.name
 
 
-class Comments(models.Model):
+class Comments(BaseModel):
     """Модель, описывающая комментарий"""
 
     text = models.TextField('Текст комментария')
-    created_at = models.DateTimeField(auto_now_add=True)
     post = models.ForeignKey(
         'Post',
         on_delete=models.CASCADE,
@@ -77,11 +76,17 @@ class Comments(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        verbose_name='Автор публикации',
         related_name='comments'
     )
 
     class Meta:
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
         ordering = ('created_at',)
+    
+    def __str__(self):
+        return self.text
 
 
 class Post(BaseModel):
