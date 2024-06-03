@@ -19,6 +19,9 @@ from users.forms import CustomUserCreationForm
 
 POSTS_NUM = 10
 
+ADD_FILTER = True
+ADD_COMMENTS = True
+
 
 User = get_user_model()
 
@@ -41,22 +44,6 @@ def get_posts(add_filter=False, add_comments=False):
     return queryset
 
 
-def get_category_object(category):
-    return get_object_or_404(Category, slug=category)
-
-
-def get_category_posts(category):
-    object = get_category_object(category)
-    if object.is_published is False:
-        raise Http404
-    queryset = get_posts(True, True).filter(category__slug=category)
-    return queryset
-
-
-def get_user(username):
-    return get_object_or_404(User, username=username)
-
-
 class OnlyAuthorMixin(UserPassesTestMixin):
 
     def test_func(self):
@@ -72,7 +59,7 @@ class OnlyAuthorMixin(UserPassesTestMixin):
 
 
 class PostListView(ListView):
-    queryset = get_posts(True, True)
+    queryset = get_posts(ADD_FILTER, ADD_COMMENTS)
     paginate_by = POSTS_NUM
     template_name = 'blog/index.html'
 
@@ -133,11 +120,11 @@ class PostDetailView(DetailView):
     def get_object(self):
         object = super().get_object()
         date_now = datetime.now().date()
-        check_author = object.author != self.request.user
-        check_is_pub = object.is_published is False
-        check_cat_is_pub = object.category.is_published is False
+        Is_author = object.author != self.request.user
+        Is_pub = object.is_published is False
+        Is_cat_is_pub = object.category.is_published is False
         check_date = date_now < object.pub_date.date()
-        if ((check_author) & (check_is_pub or check_cat_is_pub or check_date)):
+        if ((Is_author) & (Is_pub or Is_cat_is_pub or check_date)):
             raise Http404
         return object
 
@@ -153,13 +140,22 @@ class CategoryListView(ListView):
     paginate_by = POSTS_NUM
     template_name = 'blog/category.html'
 
+    def get_category(self):
+        return get_object_or_404(
+            Category,
+            slug=self.kwargs['category_slug'],
+            is_published=True,
+        )
+
     def get_queryset(self):
-        queryset = get_category_posts(self.kwargs['category_slug'])
+        queryset = get_posts(ADD_FILTER, ADD_COMMENTS).filter(
+            category__slug=self.get_category().slug
+        )
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        category = get_category_object(self.kwargs['category_slug'])
+        category = self.get_category()
         context['category'] = category
         return context
 
@@ -169,20 +165,18 @@ class ProfileListView(ListView):
     paginate_by = POSTS_NUM
     template_name = 'blog/profile.html'
 
+    def get_profile(self):
+        return get_object_or_404(User, username=self.kwargs['username'])
+
     def get_queryset(self):
-        get_user(self.kwargs['username'])
-        if self.kwargs['username'] != self.request.user.username:
-            return get_posts(True, True).filter(
-                author__username=self.kwargs['username']
-            )
-        else:
-            return get_posts(False, True).filter(
-                author__username=self.kwargs['username']
-            )
+        profile = self.get_profile()
+        return get_posts(self.request.user != profile, ADD_COMMENTS).filter(
+            author=profile
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        profile = get_user(self.kwargs['username'])
+        profile = self.get_profile()
         context['profile'] = profile
         return context
 
