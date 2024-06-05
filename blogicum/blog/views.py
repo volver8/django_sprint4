@@ -120,11 +120,11 @@ class PostDetailView(DetailView):
     def get_object(self):
         object = super().get_object()
         date_now = datetime.now().date()
-        Is_author = object.author != self.request.user
-        Is_pub = object.is_published is False
-        Is_cat_is_pub = object.category.is_published is False
+        is_author = object.author != self.request.user
+        is_pub = object.is_published is False
+        is_cat_is_pub = object.category.is_published is False
         check_date = date_now < object.pub_date.date()
-        if ((Is_author) & (Is_pub or Is_cat_is_pub or check_date)):
+        if ((is_author) & (is_pub or is_cat_is_pub or check_date)):
             raise Http404
         return object
 
@@ -149,7 +149,7 @@ class CategoryListView(ListView):
 
     def get_queryset(self):
         queryset = get_posts(ADD_FILTER, ADD_COMMENTS).filter(
-            category__slug=self.get_category().slug
+            category=self.get_category()
         )
         return queryset
 
